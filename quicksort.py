@@ -1,67 +1,84 @@
 import random
-import time
+import timeit
 import matplotlib.pyplot as plt
 
-def quicksort(arr):
-    if len(arr) <= 1:
-        return arr
-    pivot = arr[len(arr) // 2]
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
-    return quicksort(left) + middle + quicksort(right)
+
+def quicksort(arr, low, high):
+    if low < high:
+        pi = partition(arr, low, high)
+        quicksort(arr, low, pi - 1)
+        quicksort(arr, pi + 1, high)
+
+
+def partition(arr, low, high):
+    pivot = arr[high]
+    i = low - 1
+    for j in range(low, high):
+        if arr[j] < pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+
 
 def quicksort_random_pivot(arr):
-    if len(arr) <= 1:
-        return arr
-    pivot = random.choice(arr)
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
-    return quicksort_random_pivot(left) + middle + quicksort_random_pivot(right)
+    random.shuffle(arr)
+    quicksort(arr, 0, len(arr) - 1)
 
-def generate_array(size):
-    return [random.randint(0, 1000) for _ in range(size)]
 
-def generate_sorted_array(size):
-    return list(range(size))
+def quicksort_nonrandom_pivot(arr):
+    quicksort(arr, 0, len(arr) - 1)
 
-def generate_reverse_sorted_array(size):
+
+def generate_random_array(size):
+    return [random.randint(1, 1000) for _ in range(size)]
+
+
+def generate_best_case_array(size):
+    return list(range(1, size + 1))
+
+
+def generate_worst_case_array(size):
     return list(range(size, 0, -1))
 
-def time_quicksort(sort_func, arr):
-    start_time = time.time()
-    sort_func(arr)
-    return time.time() - start_time
 
-def benchmark(sort_func, size, trials):
-    times = []
-    for _ in range(trials):
-        arr = generate_array(size)
-        times.append(time_quicksort(sort_func, arr))
-    return sum(times) / trials
+def generate_average_case_array(size):
+    return [random.randint(1, size) for _ in range(size)]
 
-def plot_benchmarks():
-    sizes = [10, 100, 1000, 10000]
-    trials = 10
 
-    best_case_times = []
-    worst_case_times = []
-    average_case_times = []
-
+def benchmark(sort_function, input_generator, sizes, repeats=5):
+    results = []
     for size in sizes:
-        best_case_times.append(benchmark(quicksort, size, trials))
-        worst_case_times.append(benchmark(quicksort, size, trials))
-        average_case_times.append(benchmark(quicksort, size, trials))
-
-    plt.plot(sizes, best_case_times, label='Best Case')
-    plt.plot(sizes, worst_case_times, label='Worst Case')
-    plt.plot(sizes, average_case_times, label='Average Case')
-    plt.xlabel('Array Size')
-    plt.ylabel('Time (s)')
-    plt.title('Quicksort Benchmarks')
-    plt.legend()
-    plt.show()
+        time_taken = timeit.timeit(lambda: sort_function(input_generator(size)), number=repeats)
+        results.append(time_taken / repeats)
+    return results
 
 
-plot_benchmarks()
+test_array = [5, 3, 2, 1, 4]
+print("Original array:", test_array)
+quicksort_nonrandom_pivot(test_array)
+print("Sorted array:", test_array)
+
+test_array = [5, 3, 2, 1, 4]
+print("Original array:", test_array)
+quicksort_random_pivot(test_array)
+print("Sorted array:", test_array)
+
+
+sizes = [10, 50, 100, 200, 300, 400, 500]
+repeats = 5
+
+best_case_results = benchmark(quicksort_nonrandom_pivot, generate_best_case_array, sizes, repeats)
+worst_case_results = benchmark(quicksort_nonrandom_pivot, generate_worst_case_array, sizes, repeats)
+average_case_results = benchmark(quicksort_nonrandom_pivot, generate_average_case_array, sizes, repeats)
+
+
+plt.plot(sizes, best_case_results, label="Best Case")
+plt.plot(sizes, worst_case_results, label="Worst Case")
+plt.plot(sizes, average_case_results, label="Average Case")
+
+plt.xlabel('Input Size')
+plt.ylabel('Time (seconds)')
+plt.title('Non-random Pivot Quicksort Benchmarks')
+plt.legend()
+plt.show()
